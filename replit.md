@@ -11,12 +11,13 @@ Preferred communication style: Simple, everyday language.
 # System Architecture
 
 ## Core Agent Patterns
-The system implements four distinct agent patterns for distributed processing:
+The system implements five distinct agent patterns for distributed processing:
 
 1. **Evaluator-Optimizer Pattern** - Validates SWIFT messages against international standards and attempts automatic corrections using iterative refinement
 2. **Parallelization Pattern** - Processes multiple messages concurrently using thread pools with configurable batch sizes and worker counts
 3. **Routing Pattern** - Routes messages based on fraud detection scores using Benford's Law statistical analysis and risk indicators
-4. **Orchestrator-Worker Pattern** - Coordinates transaction splitting across multiple worker threads for parallel processing
+4. **Prompt Chaining Pattern** - Creates conversations between specialized AI agents (Screener, Technical Analyst, Risk Assessor, Compliance Officer, Final Reviewer) for enhanced fraud analysis through multi-step reasoning
+5. **Orchestrator-Worker Pattern** - Coordinates transaction splitting across multiple worker threads for parallel processing
 
 ## Data Models
 The system uses Pydantic models for strict data validation:
@@ -31,7 +32,8 @@ Messages flow through a multi-stage pipeline:
 2. **Validation** - Multi-iteration validation with automatic correction attempts
 3. **Fraud Detection** - Statistical analysis using Benford's Law and pattern matching
 4. **Routing** - Directs messages to appropriate processing queues based on risk scores
-5. **Transaction Processing** - Splits transactions into company fees and account components
+5. **Prompt Chaining Analysis** - High-risk transactions undergo detailed analysis through AI agent conversations for enhanced decision-making
+6. **Transaction Processing** - Splits transactions into company fees and account components
 
 ## Fraud Detection System
 Implements comprehensive fraud detection using:

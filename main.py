@@ -16,6 +16,7 @@ from agents.evaluator_optimizer import EvaluatorOptimizer
 from agents.parallelization import ParallelizationAgent
 from agents.routing import RoutingAgent
 from agents.orchestrator_worker import OrchestratorWorker
+from agents.prompt_chaining import PromptChainingAgent
 from utils.logger import setup_logger
 
 
@@ -33,6 +34,7 @@ class SWIFTProcessingSystem:
         self.parallelization_agent = ParallelizationAgent()
         self.routing_agent = RoutingAgent()
         self.orchestrator_worker = OrchestratorWorker()
+        self.prompt_chaining_agent = PromptChainingAgent()
         
         self.logger.info("SWIFT Processing System initialized")
     
@@ -88,9 +90,52 @@ class SWIFTProcessingSystem:
         
         return processed_messages
     
+    def process_with_prompt_chaining(self, messages: List[SWIFTMessage]) -> List[SWIFTMessage]:
+        """Step 3: Enhanced fraud analysis using Prompt Chaining pattern"""
+        self.logger.info("Step 3: Processing with Prompt Chaining pattern...")
+        
+        start_time = time.time()
+        
+        # Select high-risk transactions for detailed prompt chain analysis
+        high_risk_messages = [msg for msg in messages if hasattr(msg, 'fraud_score') and float(getattr(msg, 'fraud_score', 0)) > 0.3]
+        
+        if high_risk_messages:
+            self.logger.info(f"Running prompt chain analysis on {len(high_risk_messages)} high-risk transactions")
+            
+            # Prepare data for prompt chaining
+            fraud_scores = [float(getattr(msg, 'fraud_score', 0)) for msg in high_risk_messages]
+            fraud_indicators = [getattr(msg, 'fraud_indicators', []) for msg in high_risk_messages]
+            
+            # Run prompt chain analysis
+            chain_results = self.prompt_chaining_agent.batch_process_with_chaining(
+                high_risk_messages, fraud_scores, fraud_indicators
+            )
+            
+            # Update messages with chain analysis results
+            for i, result in enumerate(chain_results):
+                if i < len(high_risk_messages):
+                    msg = high_risk_messages[i]
+                    # Add chain analysis results to the message
+                    setattr(msg, 'chain_analysis', result.get('chain_analysis', {}))
+                    setattr(msg, 'agent_perspectives', result.get('agent_perspectives', {}))
+                    
+                    # Update fraud status based on chain decision
+                    final_decision = result.get('chain_analysis', {}).get('final_decision', 'HOLD')
+                    if final_decision == "REJECT":
+                        msg.fraud_status = "FRAUDULENT"
+                    elif final_decision == "HOLD":
+                        msg.fraud_status = "HELD"
+                    elif final_decision == "APPROVE":
+                        msg.fraud_status = "CLEAN"
+        
+        processing_time = time.time() - start_time
+        self.logger.info(f"Prompt Chaining completed in {processing_time:.2f} seconds")
+        
+        return messages
+    
     def process_with_orchestrator_worker(self, messages: List[SWIFTMessage]) -> None:
-        """Step 3: Split transactions using Orchestrator-Worker pattern"""
-        self.logger.info("Step 3: Processing with Orchestrator-Worker pattern...")
+        """Step 4: Split transactions using Orchestrator-Worker pattern"""
+        self.logger.info("Step 4: Processing with Orchestrator-Worker pattern...")
         
         start_time = time.time()
         
@@ -145,11 +190,14 @@ class SWIFTProcessingSystem:
             # Step 3: Parallelization with Routing pattern
             processed_messages = self.process_with_parallelization(validated_messages)
             
-            # Step 4: Orchestrator-Worker pattern
-            self.process_with_orchestrator_worker(processed_messages)
+            # Step 4: Prompt Chaining pattern for enhanced fraud analysis
+            chain_analyzed_messages = self.process_with_prompt_chaining(processed_messages)
+            
+            # Step 5: Orchestrator-Worker pattern
+            self.process_with_orchestrator_worker(chain_analyzed_messages)
             
             # Generate and display statistics
-            stats = self.generate_statistics(processed_messages)
+            stats = self.generate_statistics(chain_analyzed_messages)
             
             overall_time = time.time() - overall_start_time
             
