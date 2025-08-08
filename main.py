@@ -17,6 +17,7 @@ from agents.parallelization import ParallelizationAgent
 from agents.routing import RoutingAgent
 from agents.orchestrator_worker import OrchestratorWorker
 from agents.prompt_chaining import PromptChainingAgent
+from agents.transaction_analyzer import TransactionAnalyzer
 from utils.logger import setup_logger
 
 
@@ -35,6 +36,7 @@ class SWIFTProcessingSystem:
         self.routing_agent = RoutingAgent()
         self.orchestrator_worker = OrchestratorWorker()
         self.prompt_chaining_agent = PromptChainingAgent()
+        self.transaction_analyzer = TransactionAnalyzer()
         
         self.logger.info("SWIFT Processing System initialized")
     
