@@ -129,41 +129,11 @@ class OrchestratorWorker:
     
     def _worker_create_account_splits(self, message: SWIFTMessage, original_amount: Decimal) -> List[TransactionSplit]:
         """
-        Worker creates account-related splits
+        Worker creates account-related splits - simplified to avoid double counting
         """
-        splits = []
-        
-        # Main account split (remaining amount after company fee)
-        company_fee_rate = Decimal(str(self.config.COMPANY_PERCENTAGE))
-        remaining_amount = original_amount - (original_amount * company_fee_rate).quantize(
-            Decimal('0.01'), rounding=ROUND_HALF_UP
-        )
-        
-        # Split remaining amount between sender and receiver accounts
-        sender_account_amount = remaining_amount / 2
-        receiver_account_amount = remaining_amount - sender_account_amount
-        
-        # Sender account split
-        splits.append(TransactionSplit(
-            original_message_id=message.message_id,
-            split_type="ACCOUNT",
-            amount=sender_account_amount,
-            currency=message.currency,
-            account_number=self._generate_account_number(message.sender_bic),
-            description=f"Sender account processing - {message.sender_bic}"
-        ))
-        
-        # Receiver account split
-        splits.append(TransactionSplit(
-            original_message_id=message.message_id,
-            split_type="ACCOUNT",
-            amount=receiver_account_amount,
-            currency=message.currency,
-            account_number=self._generate_account_number(message.receiver_bic),
-            description=f"Receiver account processing - {message.receiver_bic}"
-        ))
-        
-        return splits
+        # No separate account splits to avoid double counting
+        # All accounting is handled through credit/debit splits
+        return []
     
     def _worker_create_credit_splits(self, message: SWIFTMessage, original_amount: Decimal) -> List[TransactionSplit]:
         """
@@ -173,7 +143,7 @@ class OrchestratorWorker:
         
         # Credit to receiver (main transaction amount minus fees)
         company_fee_rate = Decimal(str(self.config.COMPANY_PERCENTAGE))
-        credit_amount = original_amount - (original_amount * company_fee_rate).quantize(
+        credit_amount = (original_amount * (Decimal('1') - company_fee_rate)).quantize(
             Decimal('0.01'), rounding=ROUND_HALF_UP
         )
         
