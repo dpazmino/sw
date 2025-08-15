@@ -30,7 +30,8 @@ class ParallelizationAgent:
         
         for msg in messages:
         
-            list_of_agents = [FraudAmountDetectionAgent(), FraudPatternDetectionAgent()]
+            #TODO What agents will be here.  There are two agents already.  Create a third agent.
+            # list_of_agents = []
 
             with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
                 # Submit batch processing tasks
@@ -77,7 +78,10 @@ class ParallelizationAgent:
             """
             Process all fraud messages and denote a message as fraud or not.
             """
-            fraud_supervior = FraudAggAgent()
+
+            #TODO Add the agent that will aggregrate the messages from the parallelization
+            #  fraud_supervior = 
+
             processed_messages = []
             
             for msg in messages:    
@@ -85,6 +89,9 @@ class ParallelizationAgent:
                     print(f"Aggregrating fraud for {msg.message_id}")
                     prompt = fraud_supervior.create_prompt(msg.fraud_statements)
                     response = fraud_supervior.respond(prompt)
+
+                    #TODO Mark all messages as fraudlent when you have the code working and see what happens in the orchestrator.
+
                     if response['total_fraud_score'] > 50:
                         msg.mark_as_fraudulent(response['total_score'], response['thought'])
                     msg.fraud_status = "PROCESSED"

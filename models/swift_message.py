@@ -7,6 +7,8 @@ from typing import Optional, Literal
 from datetime import datetime
 import uuid
 
+#TODO Add a field to the swift message below and add that field to a required field in the validation process.
+# One example of this is the note field.
 
 class SWIFTMessage(BaseModel):
     """SWIFT message model with validation"""

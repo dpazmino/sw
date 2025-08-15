@@ -22,10 +22,6 @@ class OrchestratorWorker:
         Main orchestrator method - coordinates workers to process transactions
         """
 
-        prompt = self.orchestrator.create_prompt(messages)
-
-        tasks = self.orchestrator.respond(prompt)
-
-        for task in tasks['tasks']:
-            print(GenericAgent().respond(task, tasks['analysis'], messages))
+        #TODO  Create the orchestrator and print out the response from the generic agent.
+        #TODO  Create another agent besides the generic agent to consume messages from the orchestrator.
 

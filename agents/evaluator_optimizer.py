@@ -44,7 +44,7 @@ class EvaluatorOptimizer:
                 # Optimization phase
                 if iteration < self.max_iterations - 1:
                     current_message = self._optimize_message(current_message, errors, corrections)
-                    current_message = SWIFTMessage(**current_message)
+                    current_message = SWIFTMessage(**json.loads(current_message))
                 else:
                     # Max iterations reached, mark as invalid
                     current_message = SWIFTMessage(**json.loads(current_message))

@@ -48,17 +48,16 @@ class PromptChainingAgent:
             screener_result = self._run_initial_screener(message)
             chain_results["screener"] = screener_result
             
-            # Step 2: Technical Analyst (uses screener output)
-            technical_result = self._run_technical_analyst(message, screener_result)
-            chain_results["technical_analyst"] = technical_result
+            # Step 2: 
+            #TODO Look at the prompts and see what comes next. Pay attention to what is passed in.
             
             # Step 3: Risk Assessor (uses both previous outputs)
-            risk_result = self._run_risk_assessor(message, screener_result, technical_result)
+            risk_result = self._run_risk_assessor(message, screener_result, <results from step2>)
             chain_results["risk_assessor"] = risk_result
             
             # Step 4: Compliance Officer (uses all previous context)
-            compliance_result = self._run_compliance_officer(message, chain_results)
-            chain_results["compliance_officer"] = compliance_result
+            #TODO Look at the prompts and see what comes next. Pay attention to what is passed in.
+            # Notice that we are passing in the chain results in the next step.
             
             # Step 5: Final Reviewer (synthesizes all findings)
             final_result = self._run_final_reviewer(message, chain_results)

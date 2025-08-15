@@ -5,11 +5,17 @@ from models.swift_message import SWIFTMessage
 from typing import Dict, List, Tuple, Any
 import json
 
+
+#TODO All the agent classes share common features.  Create an abstract class called BaseAgent so that 
+# the other classes can inherit from them.
+
 class SwiftCorrectionAgent:
     
     def __init__(self):
         self.config = Config()
-        self.llm_service = LLMService()
+
+        #TODO  Define LLMService
+        #self.llm_service 
         
     def create_prompt(self, message: SWIFTMessage, errors: List[str], corrections: str )-> str:
         """
@@ -55,11 +61,15 @@ For missing fields, please add the fields to the message with the correction.
                     "content": prompt
                 }
             ],
-            response_format={"type": "json_object"},
+
+            #TODO  What is the respons format here.  If you follow the code that leads to here, you will see that
+            # a particular format is needed to convert the reponst back to a SWIFT message.
+            #response_format=
             temperature=0
         )
         
-        result = json.loads(response.choices[0].message.content or "{}")
+        #TODO  As seen above, what is the result from the response
+        #result = 
         
         return result
             
@@ -73,6 +83,9 @@ class SwiftEvalutionAgent:
         """
         Create prompt for LLM correction
         """
+
+        #TODO Add a required field below.  This process is mimicing the idea of self-correcting SWIFT messages.
+        # You must also add the required field to the SWiFT Message.
         prompt = f"""
 
 Please help list the errors for the following message based only on the rules below.
@@ -286,6 +299,11 @@ class Orchestrator:
         self.config = Config()
         self.llm_service = LLMService()
         
+    #TODO  create a prompt that deals with reports on high risk transactions.
+    #def create_prompt_high_risk(self, message: List[SWIFTMessage]) -> str:
+    #  add the prompt.
+
+    
     def create_prompt(self, messages: List[SWIFTMessage]) -> str:
         """
         Create prompt for Orchestration

@@ -80,6 +80,10 @@ class SWIFTProcessingSystem:
         """Step 4: Split transactions using Orchestrator-Worker pattern"""
         
         # Filter non-fraudulent messages for final processing
+        #TODO  You can change clean messages and get a different result in the task output.
+        # The reports will be printed to the console.  Run one set of messages that are not fraudulent
+        #  and then change the message structure so that a whole new set of reports are created.
+        #  sumbmit both sets of reports.
         clean_messages = [msg for msg in messages if msg.fraud_status != "FRAUDULENT"]
         
         self.orchestrator_worker.process_transactions(clean_messages)
@@ -96,16 +100,17 @@ class SWIFTProcessingSystem:
             messages = self.generate_swift_messages()
             
             # Step 2: Evaluator-Optimizer pattern
-            validated_messages = self.process_with_evaluator_optimizer(messages)
+            #TODO  call the evaluator optimizer and save result in a variable.
             
             # Step 3: Parallelization 
-            processed_messages = self.process_with_parallelization(validated_messages)
+            #TODO Call the parallelization process and pass in the results from the previous step
             
             # Step 4: Prompt Chaining pattern for enhanced fraud analysis
-            chain_analyzed_messages = self.process_with_prompt_chaining(processed_messages)
+            #TODO Call the prompt chaining and pass in the values from parallelization.
             
             # Step 5: Orchestrator-Worker pattern
-            self.process_with_orchestrator_worker(chain_analyzed_messages)
+            #TODO Pass in the results from the previous step to the orchestrator
+            #self.process_with_orchestrator_worker(<value>)
             
         except Exception as e:
             raise

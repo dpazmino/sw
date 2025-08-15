@@ -2,7 +2,6 @@
 SWIFT message generation service
 """
 
-import logging
 from typing import List
 from faker import Faker
 import random
@@ -16,14 +15,12 @@ class SWIFTGenerator:
     """Service for generating realistic SWIFT messages"""
     
     def __init__(self):
-        self.logger = logging.getLogger(__name__)
         self.fake = Faker()
         self.bank_registry = BankRegistry()
         
         # Initialize with fake banks
         self.bank_registry.initialize_with_fake_data(30)
         
-        self.logger.info("SWIFT Generator initialized with bank registry")
     
     def generate_messages(self, count: int = 1000, bank_count: int = 30) -> List[SWIFTMessage]:
         """
@@ -186,7 +183,6 @@ class SWIFTGenerator:
         """
         Generate a test batch with known fraud patterns for Benford's Law testing
         """
-        self.logger.info(f"Generating test batch of {count} messages with {fraud_ratio*100}% fraud patterns")
         
         messages = []
         fraud_count = int(count * fraud_ratio)
@@ -205,7 +201,6 @@ class SWIFTGenerator:
         # Shuffle to randomize order
         random.shuffle(messages)
         
-        self.logger.info(f"Generated test batch: {clean_count} clean, {fraud_count} fraudulent")
         return messages
     
     def _generate_fraudulent_message(self) -> SWIFTMessage:
