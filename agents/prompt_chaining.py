@@ -7,8 +7,7 @@ SWIFT transactions, creating a more thorough and contextual fraud analysis.
 """
 
 import json
-import logging
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any, List
 from datetime import datetime
 
 from openai import OpenAI
@@ -29,7 +28,6 @@ class PromptChainingAgent:
     """
     
     def __init__(self):
-        self.logger = logging.getLogger(__name__)
         self.config = Config()
         
         # Initialize OpenAI client
@@ -37,23 +35,17 @@ class PromptChainingAgent:
         # do not change this unless explicitly requested by the user
         self.client = OpenAI(api_key=self.config.OPENAI_API_KEY)
         self.model = self.config.OPENAI_MODEL
-        
-        self.logger.info("Prompt Chaining Agent initialized")
     
-    def analyze_transaction_chain(self, message: SWIFTMessage, 
-                                initial_fraud_score: float,
-                                fraud_indicators: List[str]) -> Dict[str, Any]:
+    def analyze_transaction_chain(self, message: SWIFTMessage) -> Dict[str, Any]:
         """
         Main method that runs the complete prompt chain analysis
         """
-        self.logger.info(f"Starting prompt chain analysis for transaction {message.message_id}")
-        
-        start_time = datetime.now()
+
         chain_results = {}
-        
+    
         try:
             # Step 1: Initial Screener
-            screener_result = self._run_initial_screener(message, initial_fraud_score, fraud_indicators)
+            screener_result = self._run_initial_screener(message)
             chain_results["screener"] = screener_result
             
             # Step 2: Technical Analyst (uses screener output)
@@ -72,8 +64,6 @@ class PromptChainingAgent:
             final_result = self._run_final_reviewer(message, chain_results)
             chain_results["final_reviewer"] = final_result
             
-            total_time = (datetime.now() - start_time).total_seconds()
-            
             # Compile final result
             result = {
                 "transaction_id": message.message_id,
@@ -86,20 +76,30 @@ class PromptChainingAgent:
                 },
                 "agent_perspectives": chain_results,
                 "chain_metadata": {
-                    "total_processing_time": total_time,
                     "steps_completed": len(chain_results),
-                    "analysis_timestamp": start_time.isoformat()
                 }
             }
             
-            self.logger.info(f"Prompt chain analysis completed for {message.message_id} in {total_time:.2f}s")
-            return result
+            setattr(message, 'chain_analysis', result.get('chain_analysis', {}))
+            setattr(message, 'agent_perspectives', result.get('agent_perspectives', {}))
+            
+            # Update fraud status based on chain decision
+            final_decision = result.get('chain_analysis', {}).get('final_decision', 'HOLD')
+
+            if final_decision == "REJECT":
+                message.fraud_status = "FRAUDULENT"
+            elif final_decision == "HOLD":
+                message.fraud_status = "HELD"
+            elif final_decision == "APPROVE":
+                message.fraud_status = "CLEAN"
             
         except Exception as e:
-            self.logger.error(f"Prompt chain analysis failed for {message.message_id}: {str(e)}")
-            return self._create_error_response(message.message_id, str(e))
+            message.processing_status = "ERROR"
+            message.validation_errors.append(f"Chain processing error: {str(e)}")
+
+        return message         
     
-    def _run_initial_screener(self, message: SWIFTMessage, fraud_score: float, indicators: List[str]) -> Dict[str, Any]:
+    def _run_initial_screener(self, message: SWIFTMessage) -> Dict[str, Any]:
         """Step 1: Initial triage and quick assessment"""
         
         system_prompt = """You are an Initial Transaction Screener with 15+ years experience in SWIFT fraud detection.
@@ -114,9 +114,6 @@ class PromptChainingAgent:
         Amount: {message.amount} {message.currency}
         Route: {message.sender_bic} → {message.receiver_bic}
         
-        AUTOMATED INDICATORS:
-        Fraud Score: {fraud_score:.3f}
-        Risk Flags: {', '.join(indicators)}
         
         Perform initial triage assessment. Respond with JSON:
         {{
@@ -148,7 +145,6 @@ class PromptChainingAgent:
                 return {"error": "No response from screener", "triage_decision": "RED"}
             
         except Exception as e:
-            self.logger.error(f"Initial screener failed: {str(e)}")
             return {"error": str(e), "triage_decision": "RED"}
     
     def _run_technical_analyst(self, message: SWIFTMessage, screener_result: Dict[str, Any]) -> Dict[str, Any]:
@@ -210,7 +206,6 @@ class PromptChainingAgent:
                 return {"error": "No response from technical analyst"}
             
         except Exception as e:
-            self.logger.error(f"Technical analyst failed: {str(e)}")
             return {"error": str(e)}
     
     def _run_risk_assessor(self, message: SWIFTMessage, screener_result: Dict[str, Any], technical_result: Dict[str, Any]) -> Dict[str, Any]:
@@ -273,7 +268,6 @@ class PromptChainingAgent:
                 return {"error": "No response from risk assessor"}
             
         except Exception as e:
-            self.logger.error(f"Risk assessor failed: {str(e)}")
             return {"error": str(e)}
     
     def _run_compliance_officer(self, message: SWIFTMessage, chain_results: Dict[str, Any]) -> Dict[str, Any]:
@@ -339,7 +333,6 @@ class PromptChainingAgent:
                 return {"error": "No response from compliance officer"}
             
         except Exception as e:
-            self.logger.error(f"Compliance officer failed: {str(e)}")
             return {"error": str(e)}
     
     def _run_final_reviewer(self, message: SWIFTMessage, chain_results: Dict[str, Any]) -> Dict[str, Any]:
@@ -382,7 +375,7 @@ class PromptChainingAgent:
         - Legal Risk: {compliance.get('legal_risk', 'UNKNOWN')}
         - Final Rec: {compliance.get('final_recommendation', 'Unknown')}
         
-        SYNTHESIZE ALL EXPERT OPINIONS AND MAKE FINAL DECISION:
+        SYNTHESIZE ALL EXPERT OPINIONS AND MAKE FINAL DECISION. Respond with JSON:
         
         {{
             "final_decision": "APPROVE|HOLD|REJECT",
@@ -416,44 +409,5 @@ class PromptChainingAgent:
                 return {"error": "No response from final reviewer"}
             
         except Exception as e:
-            self.logger.error(f"Final reviewer failed: {str(e)}")
             return {"error": str(e)}
     
-    def _create_error_response(self, transaction_id: str, error: str) -> Dict[str, Any]:
-        """Create error response when entire chain fails"""
-        return {
-            "transaction_id": transaction_id,
-            "chain_analysis": {
-                "final_decision": "HOLD",
-                "confidence_score": 0.0,
-                "risk_level": "HIGH",
-                "consensus_reasoning": f"Analysis failed: {error}",
-                "recommended_actions": ["Manual review required", "System investigation needed"]
-            },
-            "agent_perspectives": {},
-            "chain_metadata": {
-                "error": error,
-                "total_processing_time": 0.0,
-                "steps_completed": 0,
-                "analysis_timestamp": datetime.now().isoformat()
-            }
-        }
-    
-    def batch_process_with_chaining(self, messages: List[SWIFTMessage], 
-                                  fraud_scores: List[float],
-                                  fraud_indicators: List[List[str]]) -> List[Dict[str, Any]]:
-        """
-        Process multiple transactions using prompt chaining
-        """
-        self.logger.info(f"Starting batch prompt chaining for {len(messages)} transactions")
-        
-        results = []
-        for i, (message, score, indicators) in enumerate(zip(messages, fraud_scores, fraud_indicators)):
-            if i % 10 == 0:
-                self.logger.info(f"Processed {i}/{len(messages)} transactions with prompt chaining")
-            
-            result = self.analyze_transaction_chain(message, score, indicators)
-            results.append(result)
-        
-        self.logger.info(f"Batch prompt chaining completed for {len(messages)} transactions")
-        return results

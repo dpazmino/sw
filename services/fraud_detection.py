@@ -42,11 +42,6 @@ class FraudDetectionService:
         fraud_indicators = []
         risk_scores = []
         
-        # Amount-based analysis
-        amount_score, amount_indicators = self._analyze_amount_risk(message)
-        risk_scores.append(amount_score)
-        fraud_indicators.extend(amount_indicators)
-        
         # Pattern-based analysis
         pattern_score, pattern_indicators = self._analyze_pattern_risk(message)
         risk_scores.append(pattern_score)
@@ -68,50 +63,6 @@ class FraudDetectionService:
         self.logger.debug(f"Transaction {message.message_id} fraud analysis: score={overall_score:.3f}, indicators={len(fraud_indicators)}")
         
         return overall_score, fraud_indicators
-    
-    def _analyze_amount_risk(self, message: SWIFTMessage) -> Tuple[float, List[str]]:
-        """
-        Analyze amount-related fraud risks
-        """
-        indicators = []
-        risk_score = 0.0
-        
-        try:
-            amount = float(message.amount)
-            
-            # Very high amounts
-            if amount > self.high_amount_threshold:
-                indicators.append(f"Very high amount: ${amount:,.2f}")
-                risk_score += 0.3
-            
-            # Round amounts (potential structuring)
-            if amount >= self.round_amount_threshold and amount % 1000 == 0:
-                indicators.append(f"Round amount suggesting structuring: ${amount:,.2f}")
-                risk_score += 0.2
-            
-            # Unusual precision for large amounts
-            if amount > 100000:
-                decimal_part = message.amount.split('.')[1] if '.' in message.amount else "00"
-                if decimal_part not in ["00", "50"]:  # Unusual cents for large amounts
-                    indicators.append("Unusual precision for large amount")
-                    risk_score += 0.1
-            
-            # Suspiciously low amounts for international transfers
-            if amount < 10:
-                indicators.append("Suspiciously low amount for international transfer")
-                risk_score += 0.2
-            
-            # Check for common fraud amount patterns
-            amount_str = str(int(amount))
-            if self._has_repeated_digits(amount_str):
-                indicators.append("Amount contains repeated digit patterns")
-                risk_score += 0.15
-            
-        except ValueError:
-            indicators.append("Invalid amount format")
-            risk_score = 0.8
-        
-        return min(1.0, risk_score), indicators
     
     def _analyze_pattern_risk(self, message: SWIFTMessage) -> Tuple[float, List[str]]:
         """

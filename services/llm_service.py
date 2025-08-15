@@ -34,7 +34,6 @@ class LLMService:
         """
         Use LLM to review suspicious transactions and make hold/approve decisions
         """
-        self.logger.debug(f"LLM reviewing suspicious transaction {message.message_id}")
         
         try:
             prompt = self._create_fraud_review_prompt(message, fraud_score, indicators)
@@ -100,8 +99,6 @@ class LLMService:
             )
             
             result = json.loads(response.choices[0].message.content or "{}")
-            
-            self.logger.debug("LLM SWIFT correction completed")
             
             return result
             

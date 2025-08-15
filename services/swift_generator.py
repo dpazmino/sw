@@ -29,7 +29,6 @@ class SWIFTGenerator:
         """
         Generate specified number of SWIFT messages
         """
-        self.logger.info(f"Generating {count} SWIFT messages across {bank_count} banks")
         
         messages = []
         
@@ -37,10 +36,6 @@ class SWIFTGenerator:
             message = self._generate_single_message()
             messages.append(message)
             
-            if (i + 1) % 100 == 0:
-                self.logger.debug(f"Generated {i + 1}/{count} messages")
-        
-        self.logger.info(f"Successfully generated {len(messages)} SWIFT messages")
         return messages
     
     def _generate_single_message(self) -> SWIFTMessage:

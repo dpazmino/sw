@@ -38,7 +38,6 @@ class ProcessedTransaction(BaseModel):
     
     # Processing metadata
     processed_by: str = "orchestrator_worker"
-    processing_time: float
     created_at: datetime = Field(default_factory=datetime.now)
     
     @property

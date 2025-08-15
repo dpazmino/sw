@@ -36,7 +36,6 @@ class RoutingAgent:
         """
         Route message based on fraud detection analysis
         """
-        self.logger.debug(f"Routing message {message.message_id}")
         
         # Perform fraud detection
         fraud_score, fraud_indicators = self._detect_fraud(message)
